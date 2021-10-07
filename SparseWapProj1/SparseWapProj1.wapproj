@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '15.0'">
+    <VisualStudioVersion>15.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x86">
+      <Configuration>Debug</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x86">
+      <Configuration>Release</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup>
+    <WapProjPath Condition="'$(WapProjPath)'==''">$(MSBuildExtensionsPath)\Microsoft\DesktopBridge\</WapProjPath>
+  </PropertyGroup>
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" />
+  <PropertyGroup>
+    <ProjectGuid>3126a3d8-f9bb-4c2a-ab44-0dddb630892a</ProjectGuid>
+    <TargetPlatformVersion>10.0.21996.0</TargetPlatformVersion>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+    <!--Set output to subfolder for bin dir-->
+    <BaseOutputPath>$(SolutionDir)bin\$(Platform)\$(Configuration)</BaseOutputPath>
+    <OutputPath>$(SolutionDir)bin\$(Platform)\$(Configuration)\DevMode</OutputPath>
+    <!--Sparse packages do not support MSIXBundles-->
+    <AppxBundle>Never</AppxBundle>
+    <!--Tell the packaging project what the entrypoint is-->
+    <EntryPointExe>PhotoStoreDemo.exe</EntryPointExe>
+    <!--Turn off package content validation as sparse packages do not include binaries, avoids APPX0703 error-->
+    <!--Allows you to Build the sparse package in VS and stage it ready for an 'F5' or 'Loose file registration'-->
+    <DisableAppxManifestItemPackageContentValidation>true</DisableAppxManifestItemPackageContentValidation>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <PackageCertificateThumbprint>96C98ACF0E8BBB4CC3500D63200252DA9DA98613</PackageCertificateThumbprint>
+    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <GenerateTestArtifacts>True</GenerateTestArtifacts>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+  </PropertyGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Images\SplashScreen.scale-200.png" />
+    <Content Include="Images\LockScreenLogo.scale-200.png" />
+    <Content Include="Images\Square150x150Logo.scale-200.png" />
+    <Content Include="Images\Square44x44Logo.scale-200.png" />
+    <Content Include="Images\Square44x44Logo.targetsize-24_altform-unplated.png" />
+    <Content Include="Images\StoreLogo.png" />
+    <Content Include="Images\Wide310x150Logo.scale-200.png" />
+    <None Include="SparseWapProj1_TemporaryKey.pfx" />
+  </ItemGroup>
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.19041.8" PrivateAssets="all" />
+  </ItemGroup>
+  <!-- Override the current target to add makeappx parameters-->
+  <!-- This is a copy from Microsoft.AppxPackage.targets with an update to the MakeAppxPack step -->
+  <!-- Create the sideloaded MSIX-->
+  <!-- The following target generates the appx package. -->
+  <Target Name="_GenerateAppxPackageFile" Inputs="$(MSBuildAllProjects);@(FinalAppxManifest);@(AppxPackagePayload);$(PackageCertificateKeyFile)" Outputs="$(AppxPackageOutput)" Condition="'$(BuildAppxSideloadPackageForUap)' == 'true'" DependsOnTargets="_FindAppxContentGroupMap;_DeleteAppxOutputFolderIfNecessary">
+    <ItemGroup Condition="'$(AppxPackageIncludePrivateSymbols)' != 'true'">
+      <AppxPackagePayload Remove="@(AppxPackagePayload)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+    <RemovePayloadDuplicates Inputs="@(AppxPackagePayload)" ProjectName="$(ProjectName)" Platform="$(Platform)">
+      <Output TaskParameter="Filtered" ItemName="_DedupedAppxPackagePayload" />
+    </RemovePayloadDuplicates>
+    <ItemGroup>
+      <AppxPackagePayload Remove="@(AppxPackagePayload)" />
+      <AppxPackagePayload Include="@(_DedupedAppxPackagePayload)" />
+      <_DedupedAppxPackagePayload Remove="@(_DedupedAppxPackagePayload)" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(AppxPackageFileMap)" Lines="[Files];&#xD;&#xA;                                 @(FinalAppxManifest->'%22%(Identity)%22 %22%(FileName)%(Extension)%22');&#xD;&#xA;                                 @(AppxPackagePayload->'%22%(Identity)%22 %22%(TargetPath)%22')" Overwrite="true" />
+    <ItemGroup>
+      <FileWrites Include="$(AppxPackageFileMap)" />
+    </ItemGroup>
+    <!--Package and sign the Test Appx-->
+    <!--Add 'Parameters' and pass in '/nv' to avoid package content validation-->
+    <MakeAppxPack MakeAppxExeFullPath="$(MakeAppxExeFullPath)" AppxContentGroupMap="$(AppxContentGroupMapFullPath)" AppxStreamableMainPackage="$(AppxStreamableMainPackage)" AppxStreamableResourcePackages="$(AppxStreamableResourcePackages)" ResourcePack="false" EncryptAppxPackage="$(AppxPackageEncryptionEnabled)" HashAlgorithmId="$(AppxHashAlgorithmId)" ValidateResourcesReferencedByManifest="false" FileMap="$(AppxPackageFileMap)" Output="$(AppxPackageOutput)" VsTelemetrySession="$(VsTelemetrySession)" Parameters="/nv" />
+    <ItemGroup>
+      <FinalAppxPackageItem Include="$(AppxPackageOutput)" />
+    </ItemGroup>
+    <ItemGroup>
+      <AllBuiltSideloadPackages Include="$(AppxPackageOutput)" />
+    </ItemGroup>
+    <ItemGroup>
+      <FileWrites Include="@(FinalAppxPackageItem)" />
+      <InstallerFileWrites Include="@(FinalAppxPackageItem)" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(AppxPackagingInfoFile)" Overwrite="true" Lines="%(FinalAppxPackageItem.FullPath)" />
+    <ItemGroup>
+      <FileWrites Include="$(AppxPackagingInfoFile)" />
+    </ItemGroup>
+    <Message Importance="high" Text="$(MSBuildProjectName) -&gt; %(FinalAppxPackageItem.FullPath)" />
+    <SignAppxPackage Condition="'$(AppxPackageSigningEnabled)' == 'true'" AppxPackageToSign="@(FinalAppxPackageItem)" CertificateThumbprint="$(PackageCertificateThumbprint)" CertificateFile="$(PackageCertificateKeyFile)" CertificatePassword="$(PackageCertificatePassword)" HashAlgorithmId="$(AppxHashAlgorithmId)" EnableSigningChecks="$(EnableSigningChecks)" SignAppxPackageExeFullPath="$(SignAppxPackageExeFullPath)" TempCertificateFilePath="$(TempCertificateFilePath)" ExportCertificate="true" VsTelemetrySession="$(VsTelemetrySession)" SigningTimestampServerUrl="$(AppxPackageSigningTimestampServerUrl)" SigningTimestampDigestAlgorithm="$(AppxPackageSigningTimestampDigestAlgorithm)">
+      <Output TaskParameter="ResolvedThumbprint" PropertyName="ResolvedThumbPrint" />
+      <Output TaskParameter="AppxPackagePublicKeyFile" PropertyName="AppxPackagePublicKeyFile" />
+    </SignAppxPackage>
+    <Message Condition="'$(AppxPackageSigningEnabled)' == 'true'" Text="$(MSBuildProjectName) -&gt; $(AppxPackagePublicKeyFile)" />
+    <Message Condition="'$(AppxPackageSigningEnabled)' == 'true'" Text="$(MSBuildProjectName) -&gt; $(ResolvedThumbprint)" />
+    <ItemGroup>
+      <InstallerFileWrites Include="$(AppxPackagePublicKeyFile)" />
+    </ItemGroup>
+    <!--Custom Build step to copy msix to solution bin folder-->
+    <PropertyGroup>
+      <MSIXPath>UnSignedMSIX</MSIXPath>
+    </PropertyGroup>
+    <PropertyGroup>
+      <MSIXPath Condition="'$(AppxPackageSigningEnabled)' == 'true'">SignedMSIX</MSIXPath>
+    </PropertyGroup>
+    <Copy UseHardlinksIfPossible="$(AppxUseHardlinksIfPossible)" SourceFiles="@(FinalAppxPackageItem)" DestinationFolder="$(BaseOutputPath)\$(MSIXPath)" />
+    <Copy UseHardlinksIfPossible="$(AppxUseHardlinksIfPossible)" Condition="'$(AppxPackageSigningEnabled)' == 'true'" SourceFiles="$(AppxPackagePublicKeyFile)" DestinationFolder="$(BaseOutputPath)\$(MSIXPath)" />
+  </Target>
+</Project>
